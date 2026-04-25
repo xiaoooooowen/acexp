@@ -1,0 +1,13 @@
+对应实验手册请参阅[《LoongArch CPU设计实验》](https://bookdown.org/ghostboy316/bookdown/chapter-fpga-board.html)。
+
+NOTE: 
+  1. minicpu_env/miniCPU/目录下的代码功能不全，是有意为之，无需提issue修正。
+  2. mycpu_env/myCPU/目录下的代码有功能错误，亦是有意为之，无需提issue修正。
+
+
+================================================================================
+实验安排简介
+================================================================================
+
+// mycpu_env  -  soc_bram i/f (block ram interface)
+exp7  : 20条指令五级流水CPU，不考虑hazard，测试插NOP的func的n1~n20，增量开发。
