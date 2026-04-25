@@ -3,9 +3,9 @@
 module if_stage(
     input                          clk            ,
     input                          reset          ,
-    //allwoin
+    // allowin
     input                          ds_allowin     ,
-    //brbus
+    // 分支总线来自 ID 级，用来选择下一条取指地址。
     input  [`BR_BUS_WD       -1:0] br_bus         ,
     //to ds
     output                         fs_to_ds_valid ,
@@ -35,12 +35,12 @@ reg  [31:0] fs_pc;
 assign fs_to_ds_bus = {fs_inst ,
                        fs_pc   };
 
-// pre-IF stage
+// pre-IF：计算下一拍要访问的指令地址。
 assign to_fs_valid  = ~reset;
 assign seq_pc       = fs_pc + 3'h4;
 assign nextpc       = br_taken ? br_target : seq_pc;
 
-// IF stage
+// IF 级握手：只有 ID 级允许接收时，PC 才会向前推进。
 assign fs_ready_go    = 1'b1;
 assign fs_allowin     = !fs_valid || fs_ready_go && ds_allowin;
 assign fs_to_ds_valid =  fs_valid && fs_ready_go;
@@ -53,7 +53,7 @@ always @(posedge clk) begin
     end
 
     if (reset) begin
-        fs_pc <= 32'h1bfffffc;  //trick: to make nextpc be 0x1c000000 during reset
+        fs_pc <= 32'h1bfffffc;  // 复位后下一拍取指地址为 0x1c000000
     end
     else if (to_fs_valid && fs_allowin) begin
         fs_pc <= nextpc;

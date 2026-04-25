@@ -15,8 +15,9 @@ module wb_stage(
     output [ 3:0] debug_wb_rf_wen ,
     output [ 4:0] debug_wb_rf_wnum,
     output [31:0] debug_wb_rf_wdata,
-    output [4:0] ws_to_ds_dest,//xin
-    output [31:0] wb_output//9
+    // WB 级写回信息同时用于寄存器堆写入和 ID 级前递。
+    output [4:0] ws_to_ds_dest,
+    output [31:0] wb_output
 );
 
 reg         ws_valid;
@@ -40,8 +41,8 @@ assign ws_to_rf_bus = {rf_we   ,  //37:37
                        rf_waddr,  //36:32
                        rf_wdata   //31:0
                       };
-assign ws_to_ds_dest = (ws_valid && ws_gr_we) ? ws_dest : 5'b0;//xin
-assign wb_output = ws_final_result;//9
+assign ws_to_ds_dest = (ws_valid && ws_gr_we) ? ws_dest : 5'b0;
+assign wb_output = ws_final_result;
 assign ws_ready_go = 1'b1;
 assign ws_allowin  = !ws_valid || ws_ready_go;
 always @(posedge clk) begin
@@ -61,7 +62,7 @@ assign rf_we    = ws_gr_we&&ws_valid;
 assign rf_waddr = ws_dest;
 assign rf_wdata = ws_final_result;
 
-// debug info generate
+// Trace debug 接口给 testbench 对拍使用，不参与 CPU 内部控制。
 assign debug_wb_pc       = ws_pc;
 assign debug_wb_rf_wen   = {4{rf_we}};
 assign debug_wb_rf_wnum  = ws_dest;

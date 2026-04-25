@@ -19,9 +19,12 @@ module mycpu_top(
     output [ 4:0] debug_wb_rf_wnum,
     output [31:0] debug_wb_rf_wdata
 );
+// resetn 是外部低有效复位，这里转成流水级内部使用的高有效 reset。
 reg         reset;
 always @(posedge clk) reset <= ~resetn;
 
+// 五级流水线握手信号：
+// valid 表示本级保存的是有效指令，allowin 表示本级可以接收上一级的新指令。
 wire         ds_allowin;
 wire         es_allowin;
 wire         ms_allowin;
@@ -36,11 +39,12 @@ wire [`ES_TO_MS_BUS_WD -1:0] es_to_ms_bus;
 wire [`MS_TO_WS_BUS_WD -1:0] ms_to_ws_bus;
 wire [`WS_TO_RF_BUS_WD -1:0] ws_to_rf_bus;
 wire [`BR_BUS_WD       -1:0] br_bus;
-// ========== [EXP8] ��������ͻ����ź� ==========
+// EXP8 数据冒险检测：EX/MEM/WB 级把目的寄存器号回传给 ID 级。
 wire [4:0] es_to_ds_dest;
 wire [4:0] ms_to_ds_dest;
 wire [4:0] ws_to_ds_dest;
-// ========== ʵ��9������ǰ���ź� ==========
+
+// 前递数据通路：后续流水级的计算结果回送到 ID 级参与源操作数选择。
 wire [31:0] alu_output;
 wire        ex_ld_w;
 wire [31:0] mem_output;
@@ -81,11 +85,11 @@ id_stage id_stage(
     .br_bus         (br_bus         ),
     //to rf: for write back
     .ws_to_rf_bus   (ws_to_rf_bus   ),
-    // ========== [EXP8] ��������ͻ����ź� ==========
+    // 后续流水级目的寄存器号，用于 RAW 冒险检测。
     .es_to_ds_dest  (es_to_ds_dest  ),
     .ms_to_ds_dest  (ms_to_ds_dest  ),
     .ws_to_ds_dest  (ws_to_ds_dest  ),
-    // ʵ��9��ǰ���ź�
+    // 前递数据：EX/MEM/WB 级结果。
     .alu_output     (alu_output     ),
     .mem_output     (mem_output     ),
     .wb_output      (wb_output      ),
@@ -109,9 +113,8 @@ exe_stage exe_stage(
     .data_sram_wen  (data_sram_wen  ),
     .data_sram_addr (data_sram_addr ),
     .data_sram_wdata(data_sram_wdata),
-    // ========== [EXP8] ��������ͻ����ź� ==========
+    // EX 级目的寄存器号和 ALU 结果，用于 ID 级前递/阻塞判断。
     .es_to_ds_dest  (es_to_ds_dest  ),
-    //ʵ��9��ǰ���ź�
     .alu_output     (alu_output     ),
     .ex_ld_w        (ex_ld_w        )
 );
@@ -130,9 +133,8 @@ mem_stage mem_stage(
     .ms_to_ws_bus   (ms_to_ws_bus   ),
     //from data-sram
     .data_sram_rdata(data_sram_rdata),
-    // ========== [EXP8] ��������ͻ����ź� ==========
+    // MEM 级写回目的寄存器号和最终结果，用于 ID 级前递。
     .ms_to_ds_dest  (ms_to_ds_dest  ),
-    // ʵ��9��ǰ���ź�
     .mem_output     (mem_output     )
 );
 // WB stage
@@ -151,9 +153,8 @@ wb_stage wb_stage(
     .debug_wb_rf_wen  (debug_wb_rf_wen  ),
     .debug_wb_rf_wnum (debug_wb_rf_wnum ),
     .debug_wb_rf_wdata(debug_wb_rf_wdata),
-     // ========== [EXP8] ��������ͻ����ź� ==========
+    // WB 级目的寄存器号和写回数据，用于 ID 级前递。
     .ws_to_ds_dest  (ws_to_ds_dest  ),
-    // ʵ��9��ǰ���ź�
     .wb_output      (wb_output      )
 );
 

@@ -16,16 +16,16 @@ module id_stage(
     output [`BR_BUS_WD       -1:0] br_bus        ,
     //to rf: for write back
     input  [`WS_TO_RF_BUS_WD -1:0] ws_to_rf_bus,
-    //xin8
+    // åç»­æµæ°´çº§ç›®çš„å¯„å­˜å™¨å·ï¼Œç”¨äº RAW å†’é™©æ£€æµ‹ã€‚
     input [4:0] es_to_ds_dest,
     input [4:0] ms_to_ds_dest,
     input [4:0] ws_to_ds_dest,
-    //end
-    // ========== ÊµÑé9£ºĞÂÔöÇ°µİĞÅºÅ ==========
-    input [31:0] alu_output,    // ĞÂÔö£ºEX¶Î¼ÆËã½á¹û
-    input [31:0] mem_output,    // ĞÂÔö£ºMEM¶ÎÊı¾İ
-    input [31:0] wb_output,     // ĞÂÔö£ºWB¶ÎÊı¾İ
-    input        ex_ld_w         // ĞÂÔö£ºEX¶ÎÊÇ·ñÎªloadÖ¸Áî
+
+    // å‰é€’æ•°æ®ï¼šåˆ†åˆ«æ¥è‡ª EX/MEM/WB çº§ã€‚
+    input [31:0] alu_output,    // EX çº§ ALU ç»“æœ
+    input [31:0] mem_output,    // MEM çº§æœ€ç»ˆç»“æœ
+    input [31:0] wb_output,     // WB çº§å†™å›æ•°æ®
+    input        ex_ld_w         // EX çº§å½“å‰æŒ‡ä»¤æ˜¯å¦ä¸º load
 );
 
 reg         ds_valid   ;
@@ -116,62 +116,61 @@ wire [ 4:0] rf_raddr2;
 wire [31:0] rf_rdata2;
 
 wire        rj_eq_rd;
-// ========== ĞÂÔö£ºÇ°µİ¿ØÖÆĞÅºÅ ==========
-wire rj_use;      // ĞÂÔö£ºÊÇ·ñĞèÒªÊ¹ÓÃrj¼Ä´æÆ÷
-wire rk_use;      // ĞÂÔö£ºÊÇ·ñĞèÒªÊ¹ÓÃrk¼Ä´æÆ÷
-wire rd_use;      // ĞÂÔö£ºÊÇ·ñĞèÒªÊ¹ÓÃrd¼Ä´æÆ÷
-wire load_hazard; // ĞÂÔö£ºload-use³åÍ»±êÖ¾
+// æºå¯„å­˜å™¨ä½¿ç”¨æƒ…å†µã€‚åªå¯¹çœŸæ­£è¢«å½“å‰æŒ‡ä»¤ä½¿ç”¨çš„å¯„å­˜å™¨åšå†’é™©åˆ¤æ–­ï¼Œ
+// é¿å…æŠŠç«‹å³æ•°å­—æ®µæˆ–æ— å…³å­—æ®µè¯¯åˆ¤æˆ RAW å†²çªã€‚
+wire rj_use;
+wire rk_use;
+wire rd_use;
+wire load_hazard;
 
-// ========== ĞÂÔö£ºÅĞ¶ÏÄÄĞ©Ö¸ÁîĞèÒªÇ°µİ ==========
 assign rj_use = inst_add_w || inst_addi_w || inst_sub_w || inst_slt || inst_sltu || 
                 inst_slli_w || inst_srli_w || inst_srai_w || inst_and || inst_or || 
                 inst_nor || inst_xor || inst_beq || inst_bne || inst_jirl || 
-                inst_ld_w || inst_st_w;  // ĞÂÔö
+                inst_ld_w || inst_st_w;
 
 assign rk_use = inst_add_w || inst_sub_w || inst_slt || inst_sltu || 
-                inst_and || inst_or || inst_nor || inst_xor;  // ĞÂÔö
+                inst_and || inst_or || inst_nor || inst_xor;
 
-assign rd_use = inst_beq || inst_bne || inst_st_w;  // ĞÂÔö
+assign rd_use = inst_beq || inst_bne || inst_st_w;
 
-// ========== ĞÂÔö£ºÇ°µİÊı¾İÑ¡Ôñ£¨¶àÂ·Ñ¡ÔñÆ÷£© ==========
-wire [31:0] rj_value_forwarding;  // ĞÂÔö
+// å‰é€’ä¼˜å…ˆçº§ï¼šEX > MEM > WB > å¯„å­˜å™¨å †ã€‚
+// EX çº§å¦‚æœæ˜¯ loadï¼Œæ•°æ®è¿˜æ²¡æœ‰ä»æ•°æ® RAM è¿”å›ï¼Œä¸èƒ½ç›´æ¥å‰é€’ã€‚
+wire [31:0] rj_value_forwarding;
 assign rj_value_forwarding = 
-    // ÓÅÏÈ¼¶1£º´ÓEX¶ÎÇ°µİ£¨ÅÅ³ıloadÖ¸Áî£©
-    (es_to_ds_dest != 5'b0 && rj == es_to_ds_dest && !ex_ld_w) ? alu_output :  // ĞÂÔö
-    // ÓÅÏÈ¼¶2£º´ÓMEM¶ÎÇ°µİ
-    (ms_to_ds_dest != 5'b0 && rj == ms_to_ds_dest) ? mem_output :  // ĞÂÔö
-    // ÓÅÏÈ¼¶3£º´ÓWB¶ÎÇ°µİ
-    (ws_to_ds_dest != 5'b0 && rj == ws_to_ds_dest) ? wb_output :   // ĞÂÔö
-    // ÓÅÏÈ¼¶4£º¶Á¼Ä´æÆ÷¶Ñ
-    rf_rdata1;  // ĞÂÔö
+    (es_to_ds_dest != 5'b0 && rj == es_to_ds_dest && !ex_ld_w) ? alu_output :
+    (ms_to_ds_dest != 5'b0 && rj == ms_to_ds_dest) ? mem_output :
+    (ws_to_ds_dest != 5'b0 && rj == ws_to_ds_dest) ? wb_output  :
+    rf_rdata1;
 
-wire [31:0] rk_value_forwarding;  // ĞÂÔö
+wire [31:0] rk_value_forwarding;
 assign rk_value_forwarding = 
-    (es_to_ds_dest != 5'b0 && rk == es_to_ds_dest && !ex_ld_w) ? alu_output :  // ĞÂÔö
-    (ms_to_ds_dest != 5'b0 && rk == ms_to_ds_dest) ? mem_output :  // ĞÂÔö
-    (ws_to_ds_dest != 5'b0 && rk == ws_to_ds_dest) ? wb_output :   // ĞÂÔö
-    rf_rdata2;  // ĞÂÔö
+    (es_to_ds_dest != 5'b0 && rk == es_to_ds_dest && !ex_ld_w) ? alu_output :
+    (ms_to_ds_dest != 5'b0 && rk == ms_to_ds_dest) ? mem_output :
+    (ws_to_ds_dest != 5'b0 && rk == ws_to_ds_dest) ? wb_output  :
+    rf_rdata2;
 
-wire [31:0] rd_value_forwarding;  // ĞÂÔö
+wire [31:0] rd_value_forwarding;
 assign rd_value_forwarding = 
-    (es_to_ds_dest != 5'b0 && rd == es_to_ds_dest && !ex_ld_w) ? alu_output :  // ĞÂÔö
-    (ms_to_ds_dest != 5'b0 && rd == ms_to_ds_dest) ? mem_output :  // ĞÂÔö
-    (ws_to_ds_dest != 5'b0 && rd == ws_to_ds_dest) ? wb_output :   // ĞÂÔö
-    rf_rdata2;  // ĞÂÔö
+    (es_to_ds_dest != 5'b0 && rd == es_to_ds_dest && !ex_ld_w) ? alu_output :
+    (ms_to_ds_dest != 5'b0 && rd == ms_to_ds_dest) ? mem_output :
+    (ws_to_ds_dest != 5'b0 && rd == ws_to_ds_dest) ? wb_output  :
+    rf_rdata2;
 
-// ========== ĞÂÔö£º¸ù¾İÖ¸ÁîÀàĞÍÑ¡ÔñÔ´²Ù×÷Êı2 ==========
-assign rkd_value = rk_use ? rk_value_forwarding : rd_value_forwarding;  // ĞŞ¸Ä
-assign rj_value  = rj_value_forwarding;  // ĞŞ¸Ä
+// ç¬¬äºŒä¸ªæºæ“ä½œæ•°æ ¹æ®æŒ‡ä»¤ç±»å‹é€‰æ‹© rk æˆ– rdã€‚
+assign rkd_value = rk_use ? rk_value_forwarding : rd_value_forwarding;
+assign rj_value  = rj_value_forwarding;
 
-// ========== ĞÂÔö£ºload-use³åÍ»¼ì²â ==========
+// load-use å†’é™©ï¼šload æŒ‡ä»¤åœ¨ EX çº§æ—¶æ•°æ®å°šæœªè¿”å›ï¼Œ
+// ä¸‹ä¸€æ¡ä¾èµ–å®ƒçš„æŒ‡ä»¤å¿…é¡»åœ¨ ID çº§æš‚åœä¸€æ‹ã€‚
 assign load_hazard = ex_ld_w && 
     ((rj_use && es_to_ds_dest != 5'b0 && rj == es_to_ds_dest) ||
      (rk_use && es_to_ds_dest != 5'b0 && rk == es_to_ds_dest) ||
-     (rd_use && es_to_ds_dest != 5'b0 && rd == es_to_ds_dest)) ? 1'b1 : 1'b0;  // ĞÂÔö
-// ==========xinzeng[EXP8]   ?    ?           ds_ready_go ??  ==========
+     (rd_use && es_to_ds_dest != 5'b0 && rd == es_to_ds_dest)) ? 1'b1 : 1'b0;
+
 wire [4:0] rf_raddr1_tmp = rj;
 wire [4:0] rf_raddr2_tmp = src_reg_is_rd ? rd : rk;
 
+// ä¿ç•™ raw_conflict ä¾¿äºæ³¢å½¢è§‚å¯Ÿï¼›å½“å‰çœŸæ­£é˜»å¡æµæ°´çº¿çš„æ˜¯ load_hazardã€‚
 wire raw_conflict;
 assign raw_conflict = (ds_valid && (rf_raddr1_tmp != 5'b0) && 
                        ((rf_raddr1_tmp == es_to_ds_dest) ||
@@ -181,7 +180,6 @@ assign raw_conflict = (ds_valid && (rf_raddr1_tmp != 5'b0) &&
                        ((rf_raddr2_tmp == es_to_ds_dest) ||
                         (rf_raddr2_tmp == ms_to_ds_dest) ||
                         (rf_raddr2_tmp == ws_to_ds_dest)));
-// ========== [EXP8]   ?    ?      ==========
 
 assign br_bus       = {br_taken,br_target};
 
@@ -198,30 +196,16 @@ assign ds_to_es_bus = {alu_op      ,  //149:138
                        ds_pc          //31 :0
                       };
 
-// ========== ĞŞ¸Ä£ºÊ¹ÓÃload_hazard¿ØÖÆÁ÷Ë®ÏßÔİÍ£ ==========
-assign ds_ready_go = !load_hazard;  // ĞŞ¸Ä£ºÔ­Îª 1'b1
+// ID çº§åªæœ‰åœ¨æ²¡æœ‰ load-use å†’é™©æ—¶æ‰å…è®¸ç»§ç»­å‘ EX çº§æµåŠ¨ã€‚
+assign ds_ready_go = !load_hazard;
 
 assign ds_allowin     = !ds_valid || ds_ready_go && es_allowin;
 assign ds_to_es_valid = ds_valid && ds_ready_go;
-//always @(posedge clk) begin
-    //if (reset) begin
-        //ds_valid <= 1'b0;
-    //end
-    //else if (br_taken) begin     // yuanlaimeiyou
-        //ds_valid <= 1'b0;
-    //end
-    //else if (ds_allowin) begin
-        //ds_valid <= fs_to_ds_valid;
-    //end
-    //if (fs_to_ds_valid && ds_allowin) begin
-        //fs_to_ds_bus_r <= fs_to_ds_bus;
-    //end
-//end
 always @(posedge clk) begin
     if (reset) begin
         ds_valid <= 1'b0;
     end
-    else if (br_taken && !load_hazard) begin  // ĞŞ¸Ä£ºÔö¼ÓÁË && !load_hazard
+    else if (br_taken && !load_hazard) begin
         ds_valid <= 1'b0;
     end
     else if (ds_allowin) begin

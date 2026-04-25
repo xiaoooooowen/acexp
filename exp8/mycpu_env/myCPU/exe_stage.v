@@ -17,9 +17,9 @@ module exe_stage(
     output [ 3:0] data_sram_wen  ,
     output [31:0] data_sram_addr ,
     output [31:0] data_sram_wdata,
-    // ��������ͻ���ӿ�
+    // 传给 ID 级的目的寄存器号，用于数据冒险判断。
     output [4:0] es_to_ds_dest,
-    //9
+    // EX 级可前递的数据，以及当前 EX 指令是否为 load。
     output [31:0] alu_output,
     output        ex_ld_w
 );
@@ -65,9 +65,9 @@ assign es_to_ms_bus = {es_res_from_mem,  //70:70
                        es_alu_result  ,  //63:32
                        es_pc             //31:0
                       };
-assign es_to_ds_dest = (es_valid && es_gr_we) ? es_dest : 5'b0;//xinzeng
-assign alu_output = es_alu_result;//9
-assign ex_ld_w    = es_res_from_mem;//9
+assign es_to_ds_dest = (es_valid && es_gr_we) ? es_dest : 5'b0;
+assign alu_output = es_alu_result;
+assign ex_ld_w    = es_res_from_mem;
 assign es_ready_go    = 1'b1;
 assign es_allowin     = !es_valid || es_ready_go && ms_allowin;
 assign es_to_ms_valid =  es_valid && es_ready_go;
@@ -92,7 +92,7 @@ assign es_alu_src2 = es_src2_is_imm ? es_imm :
 
 alu u_alu(
     .alu_op     (es_alu_op    ),
-    .alu_src1   (es_alu_src1  ),//yuanlaishi2
+    .alu_src1   (es_alu_src1  ),
     .alu_src2   (es_alu_src2  ),
     .alu_result (es_alu_result)
     );

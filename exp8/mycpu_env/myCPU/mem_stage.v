@@ -14,8 +14,9 @@ module mem_stage(
     output [`MS_TO_WS_BUS_WD -1:0] ms_to_ws_bus  ,
     //from data-sram
     input  [31                 :0] data_sram_rdata,
-    output [4:0] ms_to_ds_dest,//xinzeng
-    output [31:0] mem_output//9
+    // MEM 级前递/冒险检测输出。
+    output [4:0] ms_to_ds_dest,
+    output [31:0] mem_output
 );
 
 reg         ms_valid;
@@ -42,8 +43,8 @@ assign ms_to_ws_bus = {ms_gr_we       ,  //69:69
                        ms_final_result,  //63:32
                        ms_pc             //31:0
                       };
-assign ms_to_ds_dest = (ms_valid && ms_gr_we) ? ms_dest : 5'b0;//xin
-assign mem_output = ms_final_result;//9
+assign ms_to_ds_dest = (ms_valid && ms_gr_we) ? ms_dest : 5'b0;
+assign mem_output = ms_final_result;
 assign ms_ready_go    = 1'b1;
 assign ms_allowin     = !ms_valid || ms_ready_go && ws_allowin;
 assign ms_to_ws_valid = ms_valid && ms_ready_go;

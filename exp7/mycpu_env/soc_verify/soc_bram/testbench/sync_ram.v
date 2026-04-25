@@ -59,7 +59,7 @@ module inst_ram #(
 			.en     (ena)
 		);
 		initial begin
-			$readmemb("../../../../../../../../func/obj/inst_ram.mif", sync_ram.ram);
+			$readmemb("../../../../../../mycpu_env/func/obj/inst_ram.mif", sync_ram.ram);
 		end
 endmodule
 
@@ -86,6 +86,6 @@ module data_ram #(
 			.en     (ena)
 		);
 		initial begin
-			$readmemb("../../../../../../../../func/obj/data_ram.mif", sync_ram.ram);
+			$readmemb("../../../../../../mycpu_env/func/obj/data_ram.mif", sync_ram.ram);
 		end
 endmodule
