@@ -28,100 +28,100 @@ module id_stage(
     input        ex_ld_w         // EX 级当前指令是否为 load
 );
 
-reg         ds_valid   ;
-wire        ds_ready_go;
+reg         ds_valid   ;  // ID 级当前是否保存有效指令
+wire        ds_ready_go;  // ID 级是否已经准备好向下游流动
 
-reg  [`FS_TO_DS_BUS_WD -1:0] fs_to_ds_bus_r;
+reg  [`FS_TO_DS_BUS_WD -1:0] fs_to_ds_bus_r;  // IF 级送来的指令与 PC 缓存
 
-wire [31:0] ds_inst;
-wire [31:0] ds_pc  ;
+wire [31:0] ds_inst;      // 当前译码的指令
+wire [31:0] ds_pc  ;      // 当前指令对应的 PC
 assign {ds_inst,
         ds_pc  } = fs_to_ds_bus_r;
 
-wire        rf_we   ;
-wire [ 4:0] rf_waddr;
-wire [31:0] rf_wdata;
+wire        rf_we   ;     // 寄存器堆写使能
+wire [ 4:0] rf_waddr;     // 寄存器堆写地址
+wire [31:0] rf_wdata;     // 寄存器堆写数据
 assign {rf_we   ,  //37:37
         rf_waddr,  //36:32
         rf_wdata   //31:0
        } = ws_to_rf_bus;
 
-wire        br_taken;
-wire [31:0] br_target;
+wire        br_taken;     // 当前指令是否需要跳转/分支
+wire [31:0] br_target;    // 跳转目标地址
 
-wire [11:0] alu_op;
-wire        load_op;
-wire        src1_is_pc;
-wire        src2_is_imm;
-wire        res_from_mem;
-wire        dst_is_r1;
-wire        gr_we;
-wire        mem_we;
-wire        src_reg_is_rd;
-wire [4: 0] dest;
-wire [31:0] rj_value;
-wire [31:0] rkd_value;
-wire [31:0] ds_imm;
-wire [31:0] br_offs;
-wire [31:0] jirl_offs;
+wire [11:0] alu_op;       // 发给 ALU 的运算控制码
+wire        load_op;      // 是否为 load 指令
+wire        src1_is_pc;   // ALU 源操作数 1 是否选择 PC
+wire        src2_is_imm;  // ALU 源操作数 2 是否选择立即数
+wire        res_from_mem; // 结果是否来自数据存储器
+wire        dst_is_r1;    // 目的寄存器是否固定为 r1
+wire        gr_we;        // 通用寄存器写使能
+wire        mem_we;       // 数据存储器写使能
+wire        src_reg_is_rd;// 第二源寄存器是否使用 rd 字段
+wire [4: 0] dest;         // 目的寄存器号
+wire [31:0] rj_value;     // 源寄存器 rj 的值
+wire [31:0] rkd_value;    // 第二源操作数的值
+wire [31:0] ds_imm;       // 当前指令的立即数
+wire [31:0] br_offs;      // 分支偏移量
+wire [31:0] jirl_offs;    // jirl 偏移量
 
-wire [ 5:0] op_31_26;
-wire [ 3:0] op_25_22;
-wire [ 1:0] op_21_20;
-wire [ 4:0] op_19_15;
-wire [ 4:0] rd;
-wire [ 4:0] rj;
-wire [ 4:0] rk;
-wire [11:0] i12;
-wire [19:0] i20;
-wire [15:0] i16;
-wire [25:0] i26;
+wire [ 5:0] op_31_26;    // 指令最高 6 位 opcode
+wire [ 3:0] op_25_22;    // 指令第 25:22 位字段
+wire [ 1:0] op_21_20;    // 指令第 21:20 位字段
+wire [ 4:0] op_19_15;    // 指令第 19:15 位字段
+wire [ 4:0] rd;          // rd 字段
+wire [ 4:0] rj;          // rj 字段
+wire [ 4:0] rk;          // rk 字段
+wire [11:0] i12;         // 12 位立即数字段
+wire [19:0] i20;         // 20 位立即数字段
+wire [15:0] i16;         // 16 位立即数字段
+wire [25:0] i26;         // 26 位立即数字段
 
-wire [63:0] op_31_26_d;
-wire [15:0] op_25_22_d;
-wire [ 3:0] op_21_20_d;
-wire [31:0] op_19_15_d;
+wire [63:0] op_31_26_d;  // 6 位译码结果
+wire [15:0] op_25_22_d;  // 4 位译码结果
+wire [ 3:0] op_21_20_d;  // 2 位译码结果
+wire [31:0] op_19_15_d;  // 5 位译码结果
 
-wire        inst_add_w;
-wire        inst_sub_w;
-wire        inst_slt;
-wire        inst_sltu;
-wire        inst_nor;
-wire        inst_and;
-wire        inst_or;
-wire        inst_xor;
-wire        inst_slli_w;
-wire        inst_srli_w;
-wire        inst_srai_w;
-wire        inst_addi_w;
-wire        inst_ld_w;
-wire        inst_st_w;
-wire        inst_jirl;
-wire        inst_b;
-wire        inst_bl;
-wire        inst_beq;
-wire        inst_bne;
-wire        inst_lu12i_w;
+wire        inst_add_w;   // add.w
+wire        inst_sub_w;   // sub.w
+wire        inst_slt;     // slt
+wire        inst_sltu;    // sltu
+wire        inst_nor;     // nor
+wire        inst_and;     // and
+wire        inst_or;      // or
+wire        inst_xor;     // xor
+wire        inst_slli_w;  // slli.w
+wire        inst_srli_w;  // srli.w
+wire        inst_srai_w;  // srai.w
+wire        inst_addi_w;  // addi.w
+wire        inst_ld_w;    // ld.w
+wire        inst_st_w;    // st.w
+wire        inst_jirl;    // jirl
+wire        inst_b;       // b
+wire        inst_bl;      // bl
+wire        inst_beq;     // beq
+wire        inst_bne;     // bne
+wire        inst_lu12i_w; // lu12i.w
 
-wire        need_ui5;
-wire        need_si12;
-wire        need_si16;
-wire        need_si20;
-wire        need_si26;
-wire        src2_is_4;
+wire        need_ui5;    // 需要无符号 5 位立即数
+wire        need_si12;   // 需要有符号 12 位立即数
+wire        need_si16;   // 需要有符号 16 位立即数
+wire        need_si20;   // 需要有符号 20 位立即数
+wire        need_si26;   // 需要有符号 26 位立即数
+wire        src2_is_4;   // 第二操作数是否固定为 4
 
-wire [ 4:0] rf_raddr1;
-wire [31:0] rf_rdata1;
-wire [ 4:0] rf_raddr2;
-wire [31:0] rf_rdata2;
+wire [ 4:0] rf_raddr1;   // 寄存器堆读端口 1 地址
+wire [31:0] rf_rdata1;   // 寄存器堆读端口 1 数据
+wire [ 4:0] rf_raddr2;   // 寄存器堆读端口 2 地址
+wire [31:0] rf_rdata2;   // 寄存器堆读端口 2 数据
 
-wire        rj_eq_rd;
+wire        rj_eq_rd;    // rj 与第二操作数是否相等
 // 源寄存器使用情况。只对真正被当前指令使用的寄存器做冒险判断，
 // 避免把立即数字段或无关字段误判成 RAW 冲突。
-wire rj_use;
-wire rk_use;
-wire rd_use;
-wire load_hazard;
+wire rj_use;      // 当前指令是否使用 rj
+wire rk_use;      // 当前指令是否使用 rk
+wire rd_use;      // 当前指令是否使用 rd
+wire load_hazard; // load-use 冒险标志
 
 assign rj_use = inst_add_w || inst_addi_w || inst_sub_w || inst_slt || inst_sltu || 
                 inst_slli_w || inst_srli_w || inst_srai_w || inst_and || inst_or || 
@@ -135,21 +135,21 @@ assign rd_use = inst_beq || inst_bne || inst_st_w;
 
 // 前递优先级：EX > MEM > WB > 寄存器堆。
 // EX 级如果是 load，数据还没有从数据 RAM 返回，不能直接前递。
-wire [31:0] rj_value_forwarding;
+wire [31:0] rj_value_forwarding; // rj 的前递后结果
 assign rj_value_forwarding = 
     (es_to_ds_dest != 5'b0 && rj == es_to_ds_dest && !ex_ld_w) ? alu_output :
     (ms_to_ds_dest != 5'b0 && rj == ms_to_ds_dest) ? mem_output :
     (ws_to_ds_dest != 5'b0 && rj == ws_to_ds_dest) ? wb_output  :
     rf_rdata1;
 
-wire [31:0] rk_value_forwarding;
+wire [31:0] rk_value_forwarding; // rk 的前递后结果
 assign rk_value_forwarding = 
     (es_to_ds_dest != 5'b0 && rk == es_to_ds_dest && !ex_ld_w) ? alu_output :
     (ms_to_ds_dest != 5'b0 && rk == ms_to_ds_dest) ? mem_output :
     (ws_to_ds_dest != 5'b0 && rk == ws_to_ds_dest) ? wb_output  :
     rf_rdata2;
 
-wire [31:0] rd_value_forwarding;
+wire [31:0] rd_value_forwarding; // rd 的前递后结果
 assign rd_value_forwarding = 
     (es_to_ds_dest != 5'b0 && rd == es_to_ds_dest && !ex_ld_w) ? alu_output :
     (ms_to_ds_dest != 5'b0 && rd == ms_to_ds_dest) ? mem_output :
@@ -167,11 +167,11 @@ assign load_hazard = ex_ld_w &&
      (rk_use && es_to_ds_dest != 5'b0 && rk == es_to_ds_dest) ||
      (rd_use && es_to_ds_dest != 5'b0 && rd == es_to_ds_dest)) ? 1'b1 : 1'b0;
 
-wire [4:0] rf_raddr1_tmp = rj;
-wire [4:0] rf_raddr2_tmp = src_reg_is_rd ? rd : rk;
+wire [4:0] rf_raddr1_tmp = rj;              // 便于观察的读地址 1
+wire [4:0] rf_raddr2_tmp = src_reg_is_rd ? rd : rk;  // 便于观察的读地址 2
 
 // 保留 raw_conflict 便于波形观察；当前真正阻塞流水线的是 load_hazard。
-wire raw_conflict;
+wire raw_conflict;  // 原始 RAW 冲突标志，仅用于观察
 assign raw_conflict = (ds_valid && (rf_raddr1_tmp != 5'b0) && 
                        ((rf_raddr1_tmp == es_to_ds_dest) ||
                         (rf_raddr1_tmp == ms_to_ds_dest) ||
@@ -183,17 +183,17 @@ assign raw_conflict = (ds_valid && (rf_raddr1_tmp != 5'b0) &&
 
 assign br_bus       = {br_taken,br_target};
 
-assign ds_to_es_bus = {alu_op      ,  //149:138
-                       load_op     ,  //137:137
-                       src1_is_pc  ,  //136:136
-                       src2_is_imm ,  //135:135
-                       gr_we       ,  //134:134
-                       mem_we      ,  //133:133
-                       dest        ,  //132:128
-                       ds_imm      ,  //127:96
-                       rj_value    ,  //95 :64
-                       rkd_value   ,  //63 :32
-                       ds_pc          //31 :0
+assign ds_to_es_bus = {alu_op      ,  //149:138，ALU 控制码
+                       load_op     ,  //137:137，是否为 load 指令
+                       src1_is_pc  ,  //136:136，ALU 源操作数 1 是否选 PC
+                       src2_is_imm ,  //135:135，ALU 源操作数 2 是否选立即数
+                       gr_we       ,  //134:134，是否写通用寄存器
+                       mem_we      ,  //133:133，是否写数据存储器
+                       dest        ,  //132:128，目的寄存器号
+                       ds_imm      ,  //127:96，立即数
+                       rj_value    ,  //95 :64，rj 的值
+                       rkd_value   ,  //63 :32，rk/rd 的值
+                       ds_pc          //31 :0，当前指令 PC
                       };
 
 // ID 级只有在没有 load-use 冒险时才允许继续向 EX 级流动。

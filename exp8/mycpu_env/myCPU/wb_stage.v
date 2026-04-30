@@ -20,23 +20,23 @@ module wb_stage(
     output [31:0] wb_output
 );
 
-reg         ws_valid;
-wire        ws_ready_go;
+reg         ws_valid;    // WB 级当前是否保存有效指令
+wire        ws_ready_go;  // WB 级是否准备好向前推进
 
-reg [`MS_TO_WS_BUS_WD -1:0] ms_to_ws_bus_r;
-wire        ws_gr_we;
-wire [ 4:0] ws_dest;
-wire [31:0] ws_final_result;
-wire [31:0] ws_pc;
+reg [`MS_TO_WS_BUS_WD -1:0] ms_to_ws_bus_r; // MEM 级传入的写回信息缓存
+wire        ws_gr_we;         // 是否写通用寄存器
+wire [ 4:0] ws_dest;          // 写回目的寄存器号
+wire [31:0] ws_final_result;  // 最终写回数据
+wire [31:0] ws_pc;            // 当前指令 PC
 assign {ws_gr_we       ,  //69:69
         ws_dest        ,  //68:64
         ws_final_result,  //63:32
         ws_pc             //31:0
        } = ms_to_ws_bus_r;
 
-wire        rf_we;
-wire [4 :0] rf_waddr;
-wire [31:0] rf_wdata;
+wire        rf_we;      // 寄存器堆写使能
+wire [4 :0] rf_waddr;   // 寄存器堆写地址
+wire [31:0] rf_wdata;   // 寄存器堆写数据
 assign ws_to_rf_bus = {rf_we   ,  //37:37
                        rf_waddr,  //36:32
                        rf_wdata   //31:0

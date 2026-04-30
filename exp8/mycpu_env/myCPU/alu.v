@@ -5,20 +5,20 @@ module alu(
   output [31:0] alu_result
 );
 
-wire op_add;   //add operation
-wire op_sub;   //sub operation
-wire op_slt;   //signed compared and set less than
-wire op_sltu;  //unsigned compared and set less than
-wire op_and;   //bitwise and
-wire op_nor;   //bitwise nor
-wire op_or;    //bitwise or
-wire op_xor;   //bitwise xor
-wire op_sll;   //logic left shift
-wire op_srl;   //logic right shift
-wire op_sra;   //arithmetic right shift
-wire op_lui;   //Load Upper Immediate
+wire op_add;   //加法运算
+wire op_sub;   //减法运算
+wire op_slt;   //有符号小于比较
+wire op_sltu;  //无符号小于比较
+wire op_and;   //按位与
+wire op_nor;   //按位或非
+wire op_or;    //按位或
+wire op_xor;   //按位异或
+wire op_sll;   //逻辑左移
+wire op_srl;   //逻辑右移
+wire op_sra;   //算术右移
+wire op_lui;   //加载高位立即数
 
-// control code decomposition
+// 控制码拆分
 assign op_add  = alu_op[ 0];
 assign op_sub  = alu_op[ 1];
 assign op_slt  = alu_op[ 2];
@@ -53,39 +53,39 @@ wire [31:0] adder_result;
 wire        adder_cout;
 
 assign adder_a   = alu_src1;
-assign adder_b   = (op_sub | op_slt | op_sltu) ? ~alu_src2 : alu_src2;  //src1 - src2 rj-rk
+assign adder_b   = (op_sub | op_slt | op_sltu) ? ~alu_src2 : alu_src2;  //用于减法：src1 - src2
 assign adder_cin = (op_sub | op_slt | op_sltu) ? 1'b1      : 1'b0;
 assign {adder_cout, adder_result} = adder_a + adder_b + adder_cin;
 
-// ADD, SUB result
+// 加法 / 减法结果
 assign add_sub_result = adder_result;
 
-// SLT result
-assign slt_result[31:1] = 31'b0;   //rj < rk 1
+// SLT 结果
+assign slt_result[31:1] = 31'b0;   //若 rj < rk，则结果置 1
 assign slt_result[0]    = (alu_src1[31] & ~alu_src2[31])
                         | ((alu_src1[31] ~^ alu_src2[31]) & adder_result[31]);
 
-// SLTU result
+// SLTU 结果
 assign sltu_result[31:1] = 31'b0;
 assign sltu_result[0]    = ~adder_cout;
 
-// bitwise operation
+// 按位运算
 assign and_result = alu_src1 & alu_src2;
 assign or_result  = alu_src1 | alu_src2;
 assign nor_result = ~or_result;
 assign xor_result = alu_src1 ^ alu_src2;
 assign lui_result = alu_src2;
 
-// SLL result
+// 逻辑左移结果
 assign sll_result = alu_src1 << alu_src2[4:0];
 
-// SRL, SRA result
-// SRA 时高位补符号位，SRL 时高位补 0。
+// 逻辑右移 / 算术右移结果
+// 算术右移时高位补符号位，逻辑右移时高位补 0。
 assign sr64_result = {{32{op_sra & alu_src1[31]}}, alu_src1[31:0]} >> alu_src2[4:0];
 
 assign sr_result   = sr64_result[31:0];
 
-// final result mux
+// 最终结果选择器
 assign alu_result = ({32{op_add|op_sub}} & add_sub_result)
                   | ({32{op_slt       }} & slt_result)
                   | ({32{op_sltu      }} & sltu_result)

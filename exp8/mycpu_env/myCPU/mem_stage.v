@@ -19,15 +19,15 @@ module mem_stage(
     output [31:0] mem_output
 );
 
-reg         ms_valid;
-wire        ms_ready_go;
+reg         ms_valid;    // MEM 级当前是否保存有效指令
+wire        ms_ready_go;  // MEM 级是否准备好向下游发送
 
-reg [`ES_TO_MS_BUS_WD -1:0] es_to_ms_bus_r;
-wire        ms_res_from_mem;
-wire        ms_gr_we;
-wire [ 4:0] ms_dest;
-wire [31:0] ms_alu_result;
-wire [31:0] ms_pc;
+reg [`ES_TO_MS_BUS_WD -1:0] es_to_ms_bus_r; // EX 级传入的控制与结果缓存
+wire        ms_res_from_mem;  // 结果是否来自数据存储器
+wire        ms_gr_we;         // 是否写通用寄存器
+wire [ 4:0] ms_dest;          // 目的寄存器号
+wire [31:0] ms_alu_result;    // EX 级 ALU 计算结果
+wire [31:0] ms_pc;            // 指令 PC
 assign {ms_res_from_mem,  //70:70
         ms_gr_we       ,  //69:69
         ms_dest        ,  //68:64
@@ -35,8 +35,8 @@ assign {ms_res_from_mem,  //70:70
         ms_pc             //31:0
        } = es_to_ms_bus_r;
 
-wire [31:0] mem_result;
-wire [31:0] ms_final_result;
+wire [31:0] mem_result;       // 从数据存储器读出的数据
+wire [31:0] ms_final_result;  // MEM 级最终写回数据
 
 assign ms_to_ws_bus = {ms_gr_we       ,  //69:69
                        ms_dest        ,  //68:64

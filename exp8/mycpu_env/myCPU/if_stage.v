@@ -18,20 +18,20 @@ module if_stage(
     input  [31:0] inst_sram_rdata
 );
 
-reg         fs_valid;
-wire        fs_ready_go;
-wire        fs_allowin;
-wire        to_fs_valid;
+reg         fs_valid;    // IF 级当前是否保存有效指令
+wire        fs_ready_go;  // IF 级是否准备好向下游发送
+wire        fs_allowin;   // IF 级是否允许接收/推进
+wire        to_fs_valid;  // 复位释放后是否允许取指
 
-wire [31:0] seq_pc;
-wire [31:0] nextpc;
+wire [31:0] seq_pc;      // 顺序下一条 PC
+wire [31:0] nextpc;      // 实际下一条 PC
 
-wire         br_taken;
-wire [ 31:0] br_target;
+wire         br_taken;   // 是否发生分支/跳转
+wire [ 31:0] br_target;  // 分支/跳转目标地址
 assign {br_taken,br_target} = br_bus;
 
-wire [31:0] fs_inst;
-reg  [31:0] fs_pc;
+wire [31:0] fs_inst;     // 当前取到的指令
+reg  [31:0] fs_pc;       // 当前 IF 级保存的 PC
 assign fs_to_ds_bus = {fs_inst ,
                        fs_pc   };
 
